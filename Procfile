@@ -1,2 +1,3 @@
-worker: python test_deploy.py
+worker: python news_poster.py
+
 
