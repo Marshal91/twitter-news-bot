@@ -20,6 +20,8 @@ from dotenv import load_dotenv
 from bs4 import BeautifulSoup
 import logging
 from logging.handlers import RotatingFileHandler
+import traceback
+import sys
 
 
 
@@ -875,21 +877,39 @@ def test_content_extraction(url):
     #start_scheduler()
     
 if __name__ == "__main__":
+       
     try:
-        validate_env_vars()
+        print("=== BOT STARTUP DEBUG ===")
+        print(f"Python version: {sys.version}")
+        print("Loading environment variables...")
         
-        if not test_twitter_connection():
-            write_log("Cannot start bot - Twitter API connection failed", level="error")
-            exit(1)
-            
-        write_log("Bot starting successfully...")
+        load_dotenv()
+        
+        print("Checking environment variables...")
+        required_vars = ["OPENAI_API_KEY", "TWITTER_API_KEY", "TWITTER_API_SECRET", 
+                        "TWITTER_ACCESS_TOKEN", "TWITTER_ACCESS_SECRET"]
+        
+        for var in required_vars:
+            value = os.getenv(var)
+            print(f"{var}: {'SET' if value else 'MISSING'}")
+        
+        print("Testing Twitter API connection...")
+        me = twitter_client.get_me()
+        print(f"Twitter connection successful. User: {me.data.username}")
+        
+        print("Starting scheduler...")
         start_scheduler()
         
     except Exception as e:
-        write_log(f"Fatal error during startup: {e}", level="error")
-        # Don't exit immediately to see the error in logs
-        time.sleep(30)
-        rais
+        print(f"FATAL ERROR: {e}")
+        print("Full traceback:")
+        traceback.print_exc()
+        print("=== END ERROR DEBUG ===")
+        
+        # Keep container alive for 60 seconds to see logs
+        time.sleep(60)
+        sys.exit(1)
+
 
 
 
