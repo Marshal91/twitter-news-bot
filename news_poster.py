@@ -20,10 +20,7 @@ from dotenv import load_dotenv
 from bs4 import BeautifulSoup
 import logging
 from logging.handlers import RotatingFileHandler
-write_log("All imports successful")
-except ImportError as e:
-    print(f"Import error: {e}")
-    exit(1)
+
 
 
 # Load .env variables
@@ -893,5 +890,6 @@ if __name__ == "__main__":
         # Don't exit immediately to see the error in logs
         time.sleep(30)
         rais
+
 
 
