@@ -868,4 +868,14 @@ if __name__ == "__main__":
         write_log(f"Fatal error: {e}", level="error")
         time.sleep(60)  # Prevent rapid restarts
         raise
+def test_deployment():
+    """Test if deployment is working"""
+    write_log("Deployment test - bot is running successfully!")
+    return True
+
+# In main:
+if __name__ == "__main__":
+    validate_env_vars()
+    test_deployment()  # Remove after testing
+    start_scheduler()
 
