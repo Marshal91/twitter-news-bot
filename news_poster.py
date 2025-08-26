@@ -21,7 +21,7 @@ from dotenv import load_dotenv
 from bs4 import BeautifulSoup
 import logging
 from logging.handlers import RotatingFileHandler
-from newspaper import Article, configuration as Configuration
+
 
 # Load .env variables
 load_dotenv()
@@ -468,45 +468,36 @@ def get_articles_for_category(category):
 # =========================
 
 def extract_article_content(url):
-    """Fetch and extract main content from article URL."""
+    """Fetch and extract main content from article URL using BeautifulSoup only."""
     try:
-        config = Configuration()
-        config.headers = {
+        headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36',
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
             'Accept-Language': 'en-US,en;q=0.5',
             'Referer': 'https://www.google.com/'
         }
-        article = Article(url, config=config)
-        article.download()
-        article.parse()
-        if article.text:
-            return article.text[:500]
+        
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        # Try to get meta description first
+        meta_desc = soup.find('meta', attrs={'name': 'description'})
+        if meta_desc and meta_desc.get('content'):
+            return meta_desc['content'][:500]
+        
+        # Fallback to first substantial paragraph
+        paragraphs = soup.find_all('p')
+        for p in paragraphs:
+            text = p.get_text().strip()
+            if len(text) > 50:
+                return text[:500]
+        
         return None
+        
     except Exception as e:
-        write_log(f"Newspaper3k failed for {url}: {e}")
-        try:
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-                'Accept-Language': 'en-US,en;q=0.5',
-                'Referer': 'https://www.google.com/'
-            }
-            response = requests.get(url, headers=headers, timeout=10)
-            response.raise_for_status()
-            soup = BeautifulSoup(response.text, 'html.parser')
-            meta_desc = soup.find('meta', attrs={'name': 'description'})
-            if meta_desc and meta_desc.get('content'):
-                return meta_desc['content'][:500]
-            paragraphs = soup.find_all('p')
-            for p in paragraphs:
-                text = p.get_text().strip()
-                if len(text) > 50:
-                    return text[:500]
-            return None
-        except Exception as e:
-            write_log(f"Could not extract content from {url}: {e}")
-            return None
+        write_log(f"Could not extract content from {url}: {e}")
+        return None
 
 def generate_content_aware_post(title, category, article_url, trend_term=None):
     """Generate relevant post based on actual article content using GPT."""
