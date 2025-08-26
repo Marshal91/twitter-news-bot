@@ -609,10 +609,9 @@ def generate_fallback_post(title, category, trend_term=None):
 # =========================
 
 def pick_relevant_image(category):
-    """Pick image relevant to the category."""
-    if not os.path.exists(IMAGE_FOLDER):
-        write_log(f"Image folder '{IMAGE_FOLDER}' does not exist")
-        return None
+    """Modified for Railway - images won't persist"""
+    write_log("Images not available in Railway environment")
+    return None
     files = [f for f in os.listdir(IMAGE_FOLDER) if f.lower().endswith((".png", ".jpg", ".jpeg"))]
     if not files:
         write_log(f"No image files found in '{IMAGE_FOLDER}'")
@@ -862,10 +861,11 @@ def test_content_extraction(url):
     #start_scheduler()
     
 if __name__ == "__main__":
-    validate_env_vars()
-    
-    # Check if running in Railway environment
-    if os.getenv('RAILWAY_ENVIRONMENT'):
-        write_log("Running in Railway environment")
-    
-    start_scheduler()
+    try:
+        validate_env_vars()
+        start_scheduler()
+    except Exception as e:
+        write_log(f"Fatal error: {e}", level="error")
+        time.sleep(60)  # Prevent rapid restarts
+        raise
+
