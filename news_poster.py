@@ -15,12 +15,15 @@ import time
 import hashlib
 from datetime import datetime, timedelta
 import pytz
-from newspaper import Article
 from openai import OpenAI
 from dotenv import load_dotenv
 from bs4 import BeautifulSoup
 import logging
 from logging.handlers import RotatingFileHandler
+write_log("All imports successful")
+except ImportError as e:
+    print(f"Import error: {e}")
+    exit(1)
 
 
 # Load .env variables
@@ -311,6 +314,18 @@ def validate_env_vars():
     if missing:
         write_log(f"Missing environment variables: {', '.join(missing)}", level="error")
         raise EnvironmentError(f"Missing environment variables: {', '.join(missing)}")
+    write_log("All environment variables validated successfully")
+
+def test_twitter_connection():
+    """Test Twitter API connection before starting scheduler."""
+    try:
+        # Simple API test
+        twitter_client.get_me()
+        write_log("Twitter API connection successful")
+        return True
+    except Exception as e:
+        write_log(f"Twitter API connection failed: {e}", level="error")
+        return False
 
 def validate_url(url, timeout=8):
     """Validate that a URL is accessible and returns valid content."""
@@ -791,7 +806,9 @@ def run_dynamic_job():
 # =========================
 # SCHEDULER
 # =========================
-
+def keepalive():
+    """Send a keepalive log message"""
+    write_log("Bot keepalive - still running")
 def schedule_posts():
     """Schedule posts with better timing."""
     times = ["05:30", "09:30", "12:00", "15:00", "17:30", "20:00", "22:30"]
@@ -863,19 +880,18 @@ def test_content_extraction(url):
 if __name__ == "__main__":
     try:
         validate_env_vars()
+        
+        if not test_twitter_connection():
+            write_log("Cannot start bot - Twitter API connection failed", level="error")
+            exit(1)
+            
+        write_log("Bot starting successfully...")
         start_scheduler()
+        
     except Exception as e:
-        write_log(f"Fatal error: {e}", level="error")
-        time.sleep(60)  # Prevent rapid restarts
-        raise
-def test_deployment():
-    """Test if deployment is working"""
-    write_log("Deployment test - bot is running successfully!")
-    return True
+        write_log(f"Fatal error during startup: {e}", level="error")
+        # Don't exit immediately to see the error in logs
+        time.sleep(30)
+        rais
 
-# In main:
-if __name__ == "__main__":
-    validate_env_vars()
-    test_deployment()  # Remove after testing
-    start_scheduler()
 
